@@ -290,11 +290,11 @@ class PlayerPath(DynamicPath):
     def next_pos(self):
         try:
             x = 80 - int(
-                lastframe["teams"][self.team]["players"][self.player]["position"][2]
+                lastframe["teams"][self.team]["players"][self.player]["head"]["position"][2]
                 + 40
             )
             y = int(
-                lastframe["teams"][self.team]["players"][self.player]["position"][0]
+                lastframe["teams"][self.team]["players"][self.player]["head"]["position"][0]
                 + 15
             )
             return (GLOBALOFFSETS[0] + x, GLOBALOFFSETS[1] + y)
