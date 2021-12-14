@@ -36,6 +36,7 @@ from asciimatics.exceptions import NextScene
 from time import sleep
 from json.decoder import JSONDecodeError
 from random import randint
+from requests.exceptions import ConnectionError
 import requests
 
 GLOBALOFFSETS = (21, 1)
@@ -143,6 +144,8 @@ class UpdateFrame(DynamicRenderer):
         except JSONDecodeError:
             pass
         except KeyError:
+            pass
+        except ConnectionError:
             pass
         except Exception as e:
             raise e
