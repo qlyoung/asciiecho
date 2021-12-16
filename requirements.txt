@@ -1,2 +1,4 @@
 asciimatics
 requests
+asyncio
+aiohttp

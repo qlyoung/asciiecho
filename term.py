@@ -36,14 +36,17 @@ from asciimatics.exceptions import NextScene
 from time import sleep
 from json.decoder import JSONDecodeError
 from random import randint
-from requests.exceptions import ConnectionError
-import requests
+import aiohttp
+from aiohttp.client_exceptions import ClientConnectorError, ContentTypeError
+import asyncio
 
 GLOBALOFFSETS = (21, 1)
 TEAM_BLUE = 0
 TEAM_ORANGE = 1
 
 ARENA_DIMMS = (82, 32)
+
+FRAMERATE = 20
 
 # frame cache
 lastframe = None
@@ -54,6 +57,26 @@ screen = None
 
 # scenes
 scenes = {"main": None}
+
+
+async def api_update():
+    """
+    Asynchronous infinite loop that continually fetches new frame data from the
+    Echo VR API.
+    """
+    global lastframe
+
+    async with aiohttp.ClientSession() as session:
+        while True:
+            try:
+                async with session.get("http://127.0.0.1:6721/session") as resp:
+                    lastframe = await resp.json()
+                await asyncio.sleep(1 / FRAMERATE)
+            except ClientConnectorError as e:
+                print("Contacting API failed: {}".format(str(e)))
+                await asyncio.sleep(3)
+            except ContentTypeError as e:
+                print("Ignoring API response with non-JSON mimetype")
 
 
 class GoalFirework(ParticleEffect):
@@ -92,26 +115,27 @@ class GoalFirework(ParticleEffect):
             self._active_systems.append(self._make_explosion())
 
 
-class UpdateFrame(DynamicRenderer):
+class TriggerEvents(DynamicRenderer):
     """
-    Dummy renderer; renders nothing, but updates the frame cache. Should come
-    first in effects chain.
+    Dummy renderer; renders nothing, but checks the current state to see if any
+    special events occurred that should trigger effects.
+
+    Should come first in effects chain.
     """
 
     def _render_now(self):
         """
         In a typical DynamicRenderer, normally you would compute your scene and
-        return it here. Instead we just fetch a new frame from the game API and
-        cache it in a global, as well as checking if a goal just occurred and
-        triggering goal effects if it did.
+        return it here. Instead we check if a goal just occurred and trigger
+        goal effects if it did.
         """
         global lastframe
         global scores
         global last_score
 
         try:
-            resp = requests.get("http://127.0.0.1:6721/session")
-            lastframe = resp.json()
+            if not lastframe:
+                raise Exception("No frame to render")
 
             # check if goal just occurred
             if (
@@ -141,14 +165,10 @@ class UpdateFrame(DynamicRenderer):
                 scenes["main"].add_effect(explode)
 
             last_score = lastframe["last_score"]
-        except JSONDecodeError:
-            pass
         except KeyError:
             pass
-        except ConnectionError:
+        except Exception:
             pass
-        except Exception as e:
-            raise e
 
         return StaticRenderer(images=[""]).rendered_text
 
@@ -312,10 +332,7 @@ class PlayerPath(DynamicPath):
         return None
 
 
-def play(_screen):
-    global screen
-
-    screen = _screen
+def create_scenes(screen):
     spacerect = " " * (ARENA_DIMMS[0] - 2) + "\n"
     spacerect *= ARENA_DIMMS[1] - 2
 
@@ -329,11 +346,11 @@ def play(_screen):
             x=GLOBALOFFSETS[0] + 1,
             y=GLOBALOFFSETS[1] + 1,
             transparent=False,
-            delete_count=1,
+            delete_count=2,
         ),
         # Print(screen, renderer=Plasma(screen.height, screen.width, 8), y=0),
         # frame update
-        Print(screen, renderer=UpdateFrame(0, 0), colour=Screen.COLOUR_RED, y=0),
+        Print(screen, renderer=TriggerEvents(0, 0), colour=Screen.COLOUR_RED, y=0),
         # Arena geo
         Print(
             screen,
@@ -516,7 +533,7 @@ def play(_screen):
             screen,
             renderer=FigletText("Echo Arena", font="big"),
             y=GLOBALOFFSETS[1] + ARENA_DIMMS[1],
-            x=GLOBALOFFSETS[0] + 9,
+            x=GLOBALOFFSETS[0] + 12,
         ),
         Print(
             screen,
@@ -527,10 +544,25 @@ def play(_screen):
         ),
     ]
 
-    scenes["main"] = Scene(effects, -1, clear=True)
-
-    screen.play([scenes["main"]])
-    sleep(10)
+    return Scene(effects, -1, clear=True)
 
 
-Screen.wrapper(play)
+def update_screen(loop, screen):
+    screen.draw_next_frame()
+    loop.call_later(1.0 / FRAMERATE, update_screen, loop, screen)
+
+
+screen = Screen.open()
+scenes["main"] = create_scenes(screen)
+screen.set_scenes([scenes["main"]])
+
+loop = asyncio.get_event_loop()
+loop.call_soon(update_screen, loop, screen)
+loop.create_task(api_update())
+
+try:
+    loop.run_forever()
+except KeyboardInterrupt:
+    print("Exiting.")
+loop.close()
+screen.close()
