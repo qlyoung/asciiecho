@@ -43,12 +43,17 @@ import asyncio
 
 Point = namedtuple("Point", ["x", "y"])
 
+# Offsets to transform screen coordinates into arena coordinates
 GLOBALOFFSETS = Point(21, 1)
+
+# Indexes of blue and orange teams in API responses
 TEAM_BLUE = 0
 TEAM_ORANGE = 1
 
+# Arena dimensions
 ARENA_DIMMS = Point(82, 32)
 
+# Target render rate
 FRAMERATE = 20
 
 # frame cache
