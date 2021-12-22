@@ -36,15 +36,18 @@ from asciimatics.exceptions import NextScene
 from time import sleep
 from json.decoder import JSONDecodeError
 from random import randint
+from collections import namedtuple
 import aiohttp
 from aiohttp.client_exceptions import ClientConnectorError, ContentTypeError
 import asyncio
 
-GLOBALOFFSETS = (21, 1)
+Point = namedtuple("Point", ["x", "y"])
+
+GLOBALOFFSETS = Point(21, 1)
 TEAM_BLUE = 0
 TEAM_ORANGE = 1
 
-ARENA_DIMMS = (82, 32)
+ARENA_DIMMS = Point(82, 32)
 
 FRAMERATE = 20
 
@@ -146,8 +149,9 @@ class TriggerEvents(DynamicRenderer):
                 xpos = (
                     8
                     if lastframe["last_score"]["team"] == "blue"
-                    else ARENA_DIMMS[0] - 8
+                    else ARENA_DIMMS.x - 8
                 )
+
                 color = (
                     Screen.COLOUR_BLUE
                     if lastframe["last_score"]["team"] == "blue"
@@ -156,8 +160,8 @@ class TriggerEvents(DynamicRenderer):
                 explode = GoalFirework(
                     color=color,
                     screen=screen,
-                    x=GLOBALOFFSETS[0] + xpos,
-                    y=GLOBALOFFSETS[1] + 15,
+                    x=GLOBALOFFSETS.x + xpos,
+                    y=GLOBALOFFSETS.y + 15,
                     life_time=70,
                     delete_count=70,
                     start_frame=screen._frame,
@@ -181,7 +185,7 @@ class GeometryRenderer(StaticRenderer):
     def __init__(self):
         super().__init__()
 
-        txt = "|" + " " * (ARENA_DIMMS[0] - 10) + "|\n"
+        txt = "|" + " " * (ARENA_DIMMS.x - 10) + "|\n"
         txt *= 3
         self._images = [txt]
 
@@ -281,9 +285,9 @@ class DiscPath(DynamicPath):
         try:
             x = 80 - int(lastframe["disc"]["position"][2] + 40)
             y = int(lastframe["disc"]["position"][0] + 15)
-            return (GLOBALOFFSETS[0] + x, GLOBALOFFSETS[1] + y)
+            return (GLOBALOFFSETS.x + x, GLOBALOFFSETS.y + y)
         except Exception as e:
-            return (GLOBALOFFSETS[0] + self.x, GLOBALOFFSETS[1] + self.y)
+            return (GLOBALOFFSETS.x + self.x, GLOBALOFFSETS.y + self.y)
 
     def process_event(self, event):
         return None
@@ -324,7 +328,7 @@ class PlayerPath(DynamicPath):
                 ][0]
                 + 15
             )
-            return (GLOBALOFFSETS[0] + x, GLOBALOFFSETS[1] + y)
+            return (GLOBALOFFSETS.x + x, GLOBALOFFSETS.y + y)
         except Exception as e:
             return (0, 0)
 
@@ -333,8 +337,8 @@ class PlayerPath(DynamicPath):
 
 
 def create_scenes(screen):
-    spacerect = " " * (ARENA_DIMMS[0] - 2) + "\n"
-    spacerect *= ARENA_DIMMS[1] - 2
+    spacerect = " " * (ARENA_DIMMS.x - 2) + "\n"
+    spacerect *= ARENA_DIMMS.y - 2
 
     effects = [
         Stars(screen, (screen.width + screen.height) // 2 + 45, delete_count=1),
@@ -343,8 +347,8 @@ def create_scenes(screen):
             screen,
             renderer=StaticRenderer(images=[spacerect]),
             colour=Screen.COLOUR_BLACK,
-            x=GLOBALOFFSETS[0] + 1,
-            y=GLOBALOFFSETS[1] + 1,
+            x=GLOBALOFFSETS.x + 1,
+            y=GLOBALOFFSETS.y + 1,
             transparent=False,
             delete_count=2,
         ),
@@ -354,24 +358,24 @@ def create_scenes(screen):
         # Arena geo
         Print(
             screen,
-            renderer=Box(ARENA_DIMMS[0], ARENA_DIMMS[1], uni=True),
-            y=GLOBALOFFSETS[1],
-            x=GLOBALOFFSETS[0],
+            renderer=Box(ARENA_DIMMS.x, ARENA_DIMMS.y, uni=True),
+            y=GLOBALOFFSETS.y,
+            x=GLOBALOFFSETS.x,
         ),
         Print(
             screen,
             renderer=GeometryRenderer(),
             colour=Screen.COLOUR_WHITE,
-            x=GLOBALOFFSETS[0] + 4,
-            y=GLOBALOFFSETS[1] + 14,
+            x=GLOBALOFFSETS.x + 4,
+            y=GLOBALOFFSETS.y + 14,
         ),
         # clock
         Print(
             screen,
             renderer=ClockText(),
             colour=Screen.COLOUR_CYAN,
-            x=GLOBALOFFSETS[0] + 38,
-            y=GLOBALOFFSETS[1],
+            x=GLOBALOFFSETS.x + 38,
+            y=GLOBALOFFSETS.y,
             transparent=False,
         ),
         # scores
@@ -379,8 +383,8 @@ def create_scenes(screen):
             screen,
             renderer=ScoreText(TEAM_ORANGE),
             colour=Screen.COLOUR_RED,
-            x=GLOBALOFFSETS[0] - 14,
-            y=GLOBALOFFSETS[1],
+            x=GLOBALOFFSETS.x - 14,
+            y=GLOBALOFFSETS.y,
             speed=20,
             transparent=False,
         ),
@@ -388,8 +392,8 @@ def create_scenes(screen):
             screen,
             renderer=ScoreText(TEAM_BLUE),
             colour=Screen.COLOUR_BLUE,
-            x=GLOBALOFFSETS[0] + ARENA_DIMMS[0] + 1,
-            y=GLOBALOFFSETS[1],
+            x=GLOBALOFFSETS.x + ARENA_DIMMS.x + 1,
+            y=GLOBALOFFSETS.y,
             speed=20,
             transparent=False,
         ),
@@ -411,8 +415,8 @@ def create_scenes(screen):
             screen,
             renderer=PlayerNameText(TEAM_BLUE, 0),
             colour=Screen.COLOUR_BLUE,
-            x=GLOBALOFFSETS[0] + ARENA_DIMMS[0] + 1,
-            y=GLOBALOFFSETS[1] + 24,
+            x=GLOBALOFFSETS.x + ARENA_DIMMS.x + 1,
+            y=GLOBALOFFSETS.y + 24,
             speed=20,
             transparent=False,
         ),
@@ -426,8 +430,8 @@ def create_scenes(screen):
             screen,
             renderer=PlayerNameText(TEAM_BLUE, 1),
             colour=Screen.COLOUR_BLUE,
-            x=GLOBALOFFSETS[0] + ARENA_DIMMS[0] + 1,
-            y=GLOBALOFFSETS[1] + 26,
+            x=GLOBALOFFSETS.x + ARENA_DIMMS.x + 1,
+            y=GLOBALOFFSETS.y + 26,
             speed=20,
             transparent=False,
         ),
@@ -441,8 +445,8 @@ def create_scenes(screen):
             screen,
             renderer=PlayerNameText(TEAM_BLUE, 2),
             colour=Screen.COLOUR_BLUE,
-            x=GLOBALOFFSETS[0] + ARENA_DIMMS[0] + 1,
-            y=GLOBALOFFSETS[1] + 28,
+            x=GLOBALOFFSETS.x + ARENA_DIMMS.x + 1,
+            y=GLOBALOFFSETS.y + 28,
             speed=20,
             transparent=False,
         ),
@@ -456,8 +460,8 @@ def create_scenes(screen):
             screen,
             renderer=PlayerNameText(TEAM_BLUE, 3),
             colour=Screen.COLOUR_BLUE,
-            x=GLOBALOFFSETS[0] + ARENA_DIMMS[0] + 1,
-            y=GLOBALOFFSETS[1] + 30,
+            x=GLOBALOFFSETS.x + ARENA_DIMMS.x + 1,
+            y=GLOBALOFFSETS.y + 30,
             speed=20,
             transparent=False,
         ),
@@ -471,8 +475,8 @@ def create_scenes(screen):
             screen,
             renderer=PlayerNameText(TEAM_ORANGE, 0),
             colour=Screen.COLOUR_RED,
-            y=GLOBALOFFSETS[1] + 24,
-            x=GLOBALOFFSETS[0] - 17,
+            y=GLOBALOFFSETS.y + 24,
+            x=GLOBALOFFSETS.x - 17,
             speed=20,
             transparent=False,
         ),
@@ -486,8 +490,8 @@ def create_scenes(screen):
             screen,
             renderer=PlayerNameText(TEAM_ORANGE, 1),
             colour=Screen.COLOUR_RED,
-            x=GLOBALOFFSETS[0] - 17,
-            y=GLOBALOFFSETS[1] + 26,
+            x=GLOBALOFFSETS.x - 17,
+            y=GLOBALOFFSETS.y + 26,
             speed=20,
             transparent=False,
         ),
@@ -501,8 +505,8 @@ def create_scenes(screen):
             screen,
             renderer=PlayerNameText(TEAM_ORANGE, 2),
             colour=Screen.COLOUR_RED,
-            x=GLOBALOFFSETS[0] - 17,
-            y=GLOBALOFFSETS[1] + 28,
+            x=GLOBALOFFSETS.x - 17,
+            y=GLOBALOFFSETS.y + 28,
             speed=20,
             transparent=False,
         ),
@@ -516,8 +520,8 @@ def create_scenes(screen):
             screen,
             renderer=PlayerNameText(TEAM_ORANGE, 3),
             colour=Screen.COLOUR_RED,
-            x=GLOBALOFFSETS[0] - 17,
-            y=GLOBALOFFSETS[1] + 30,
+            x=GLOBALOFFSETS.x - 17,
+            y=GLOBALOFFSETS.y + 30,
             speed=20,
             transparent=False,
         ),
@@ -525,22 +529,22 @@ def create_scenes(screen):
         Print(
             screen,
             renderer=Fire(8, 125, "*" * 110, 0.8, 20, screen.colours),
-            y=GLOBALOFFSETS[1] + ARENA_DIMMS[1],
+            y=GLOBALOFFSETS.y + ARENA_DIMMS.y,
             x=0,
         ),
         # Title
         Print(
             screen,
             renderer=FigletText("Echo Arena", font="big"),
-            y=GLOBALOFFSETS[1] + ARENA_DIMMS[1],
-            x=GLOBALOFFSETS[0] + 12,
+            y=GLOBALOFFSETS.y + ARENA_DIMMS.y,
+            x=GLOBALOFFSETS.x + 12,
         ),
         Print(
             screen,
             renderer=StaticRenderer(images=["by qlyoung"]),
             colour=Screen.COLOUR_YELLOW,
-            y=GLOBALOFFSETS[1] + ARENA_DIMMS[1],
-            x=GLOBALOFFSETS[0] + 50,
+            y=GLOBALOFFSETS.y + ARENA_DIMMS.y,
+            x=GLOBALOFFSETS.x + 50,
         ),
     ]
 
