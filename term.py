@@ -388,20 +388,30 @@ def create_scenes(screen):
         # scores
         Print(
             screen,
+            renderer=StaticRenderer([(" " * (GLOBALOFFSETS.x - 1) + "\n") * 8]),
+            colour=Screen.COLOUR_RED,
+            x=0, y=GLOBALOFFSETS.y,
+            transparent=False),
+        Print(
+            screen,
             renderer=ScoreText(TEAM_ORANGE),
             colour=Screen.COLOUR_RED,
             x=GLOBALOFFSETS.x - 14,
             y=GLOBALOFFSETS.y,
-            speed=20,
             transparent=False,
         ),
+        Print(
+            screen,
+            renderer=StaticRenderer([(" " * (GLOBALOFFSETS.x - 1) + "\n") * 8]),
+            colour=Screen.COLOUR_BLUE,
+            x=GLOBALOFFSETS.x + ARENA_DIMMS.x + 1, y=GLOBALOFFSETS.y,
+            transparent=False),
         Print(
             screen,
             renderer=ScoreText(TEAM_BLUE),
             colour=Screen.COLOUR_BLUE,
             x=GLOBALOFFSETS.x + ARENA_DIMMS.x + 1,
             y=GLOBALOFFSETS.y,
-            speed=20,
             transparent=False,
         ),
         # disc sprite
