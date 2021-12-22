@@ -184,14 +184,16 @@ class TriggerEvents(DynamicRenderer):
 
 class GeometryRenderer(StaticRenderer):
     """
-    Dynamic renderer for arena geometry
+    Dynamic renderer for arena geometry (other than the bounding box)
     """
 
     def __init__(self):
         super().__init__()
 
+        # Goals
         txt = "|" + " " * (ARENA_DIMMS.x - 10) + "|\n"
         txt *= 3
+
         self._images = [txt]
 
 
